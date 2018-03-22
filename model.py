@@ -16,7 +16,7 @@ from util import build_dictionary
 class ProteinClassification(object):
 
     def __init__(self, mode, path, folds, embedding_size, hidden_size, hidden_layers, batch_size, keep_prob_dropout, L2,
-                 learning_rate, val_size, num_epochs=10):
+                 learning_rate, num_epochs=10):
 
         self.mode = mode
         self.path = path
@@ -28,7 +28,6 @@ class ProteinClassification(object):
         self.keep_prob_dropout = keep_prob_dropout
         self.L2 = L2
         self.learning_rate = learning_rate
-        self.val_size = val_size
         self.num_epochs = num_epochs
 
     def save_model(self, session, epoch):
@@ -86,7 +85,7 @@ class ProteinClassification(object):
             data_labels = pkl.load(f)
 
         dictionary, reverse_dictionary, data_lengths, self.max_seq_len, enc_sequences = build_dictionary(data_sequences)
-        print(self.max_seq_len)
+        print(len(data_lengths), np.max(data_lengths), np.min(data_lengths), np.mean(data_lengths), np.std(data_lengths))
         self.dictionary = sorted(dictionary.items(), key=operator.itemgetter(1))
         print(self.dictionary)
         self.vocabulary_size = len(dictionary)
@@ -95,7 +94,7 @@ class ProteinClassification(object):
         print('Training fold number %d. Each fold of size %d' % (fold, len(data_sequences) // self.folds))
 
         if self.is_train:
-            self.max_seq_len = 2000
+            # self.max_seq_len = 2000
             original_lengths = copy(data_lengths)
 
             data_sequences = enc_sequences[:, :self.max_seq_len]
@@ -283,6 +282,8 @@ class ProteinClassification(object):
                     test_sequences = pkl.load(f)
 
                 _, _, data_lengths, _, enc_sequences = build_dictionary(test_sequences, vocab=dictionary)
+                print(len(data_lengths), np.max(data_lengths), np.min(data_lengths), np.mean(data_lengths),
+                      np.std(data_lengths))
 
                 test_dict = {sequences: enc_sequences,
                              sequences_lengths: data_lengths,
@@ -309,7 +310,6 @@ if __name__ == '__main__':
                                   keep_prob_dropout=0.7,
                                   L2=0.0,
                                   learning_rate=0.01,
-                                  val_size=1700,
                                   num_epochs=20)
 
     model.run()
