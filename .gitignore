@@ -1,0 +1,9 @@
+
+model/checkpoint
+*.checkpoint
+*.data-00000-of-00001
+*.index
+*.meta
+model/tensorboard/checkpoint
+*.local
+*.pbtxt
