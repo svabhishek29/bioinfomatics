@@ -15,7 +15,7 @@ from util import build_dictionary
 
 class ProteinClassification(object):
 
-    def __init__(self, mode, path, folds, embedding_size, hidden_size, hidden_layers, batch_size, keep_prob_dropout, L2,
+    def __init__(self, mode, path, folds, embedding_size, hidden_size, batch_size, keep_prob_dropout,
                  learning_rate, num_epochs=10):
 
         self.mode = mode
@@ -23,10 +23,8 @@ class ProteinClassification(object):
         self.folds = folds
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
-        self.hidden_layers = hidden_layers
         self.batch_size = batch_size
         self.keep_prob_dropout = keep_prob_dropout
-        self.L2 = L2
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
 
@@ -43,7 +41,7 @@ class ProteinClassification(object):
         with tf.variable_scope("encoder") as varscope:
             cell = tf.contrib.rnn.GRUCell(self.hidden_size)
             cell = tf.contrib.rnn.DropoutWrapper(cell, input_keep_prob=dropout)
-            cell = tf.contrib.rnn.MultiRNNCell([cell] * self.hidden_layers, state_is_tuple=True)
+            cell = tf.contrib.rnn.MultiRNNCell([cell], state_is_tuple=True)
             sentences_outputs, sentences_states = tf.nn.dynamic_rnn(cell,
                                                                     inputs=sentences_embedded,
                                                                     sequence_length=sentences_lengths,
@@ -156,10 +154,7 @@ class ProteinClassification(object):
             logits = tf.contrib.layers.linear(non_linear_BN, 4)
 
         # Compute mean loss on this batch, consisting of cross entropy loss and L2 loss
-        CE_loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits))
-        all_vars = tf.trainable_variables()
-        L2_loss = tf.add_n([tf.nn.l2_loss(v) for v in all_vars if 'bias' not in v.name]) * self.L2
-        loss = CE_loss + L2_loss
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits))
 
         # Perform training operation
         learning_rate = tf.train.exponential_decay(self.learning_rate, global_step, 100, 0.96, staircase=True)
@@ -167,8 +162,6 @@ class ProteinClassification(object):
                                                  optimizer='Adam', clip_gradients=2.0,
                                                  learning_rate_decay_fn=None, summaries=None)
 
-        tf.summary.scalar('CE_loss', CE_loss)
-        tf.summary.scalar('L2_loss', L2_loss)
         tf.summary.scalar('loss', loss)
         tf.summary.scalar('learning_rate', learning_rate)
 
@@ -300,15 +293,13 @@ if __name__ == '__main__':
 
     labels_string = ['cyto', 'secreted', 'mito', 'nucleus']
 
-    model = ProteinClassification(mode='Test',
+    model = ProteinClassification(mode='Train',
                                   path='./model/',
                                   folds=5,
                                   embedding_size=32,
                                   hidden_size=64,
-                                  hidden_layers=1,
                                   batch_size=32,
                                   keep_prob_dropout=0.7,
-                                  L2=0.0,
                                   learning_rate=0.01,
                                   num_epochs=20)
 
